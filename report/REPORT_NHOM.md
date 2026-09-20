@@ -87,14 +87,15 @@ Nhận xét chung: `fixed_size` luôn cho chunk đều nhau (~195-200 ký tự) 
 
 **Thành viên 3 — Vũ Minh Điềm (Strategy Lead)**
 - **Loại chiến lược:** HeadingChunker (custom — chunk theo tiêu đề/mục Markdown), `chunk_size=1000`
-- **Mô tả & lý do chọn cho chủ đề này:** Văn bản chính sách Shopee đã được viết theo mục có heading (`## 1. Nguyên tắc chung`, `### 1.2. Thời gian tối đa...`), mỗi mục là một đơn vị ngữ nghĩa trọn vẹn do người soạn chia sẵn — chunk theo heading tận dụng đúng cấu trúc đó thay vì cắt cơ học. Trên corpus 6 tài liệu (55 chunk), tài liệu gold luôn xuất hiện đâu đó trong top-3 cho cả 5/5 câu hỏi, và câu cần `metadata_filter={"audience":"seller"}` có đáp án đúng trong top-3 — điểm benchmark theo `docs/SCORING.md`: **6/10** (2+1+0+2+1).
+- **Mô tả & lý do chọn cho chủ đề này:** Văn bản chính sách Shopee đã được viết theo mục có heading (`## 1. Nguyên tắc chung`, `### 1.2. Thời gian tối đa...`), mỗi mục là một đơn vị ngữ nghĩa trọn vẹn do người soạn chia sẵn — chunk theo heading tận dụng đúng cấu trúc đó thay vì cắt cơ học. Trên corpus 6 tài liệu (55 chunk), tài liệu gold luôn xuất hiện đâu đó trong top-3 cho cả 5/5 câu hỏi — điểm benchmark theo `docs/SCORING.md`: **7/10** (2+2+0+2+1).
 
-  **Nhật ký tinh chỉnh `chunk_size` (thử nghiệm thật, có đo lại, không đoán):**
-  1. **`chunk_size=500`** (87 chunk) → 5/10. Trace từng chunk cho thấy mục "Phương thức thanh toán và thời gian hoàn tiền" (~900 ký tự, liệt kê 7 phương thức) dài hơn 500 nên bị `RecursiveChunker` hạ xuống, chẻ thành ~10 mảnh nhỏ cùng chủ đề — mảnh chứa đúng "thẻ tín dụng → 7-14 ngày" xếp hạng **9/10 trong chính file đó** (thua các mảnh mở đầu chung chung chỉ vì trùng từ vựng câu hỏi nhiều hơn). Đây là nguyên nhân Q4 = 0đ.
-  2. **Thử thêm breadcrumb** (gắn tiêu đề cha vào mỗi chunk con) — làm **giảm** điểm xuống 3/10: lặp lại tiêu đề tài liệu ở đầu mọi chunk khiến điểm similarity của mọi chunk trong cùng file tăng đều như nhau, xoá luôn phần khác biệt hữu ích giữa các chunk (Q2, Q5 đang đúng bị lệch hướng). **Đã revert.**
-  3. **`chunk_size=1000`** (55 chunk, áp dụng chính thức) → 6/10. Mục bảng dài giờ lọt gọn trong 1 chunk, chunk top-1 của Q4 chứa đúng "7-14 ngày làm việc". Đánh đổi: Q5 tụt nhẹ từ top-1 xuống top-2 (đáp án đúng vẫn còn trong top-3, chỉ mất 1/2 điểm).
+  **Nhật ký tinh chỉnh (thử nghiệm thật, có đo lại, không đoán):**
+  1. **`chunk_size=500`, không filter Q1-Q4** (87 chunk) → 5/10. Trace từng chunk cho thấy mục "Phương thức thanh toán và thời gian hoàn tiền" (~900 ký tự, liệt kê 7 phương thức) dài hơn 500 nên bị `RecursiveChunker` hạ xuống, chẻ thành ~10 mảnh nhỏ cùng chủ đề — mảnh chứa đúng "thẻ tín dụng → 7-14 ngày" xếp hạng **9/10 trong chính file đó**. Đây là nguyên nhân Q4 = 0đ.
+  2. **Thử thêm breadcrumb** (gắn tiêu đề cha vào mỗi chunk con) — làm **giảm** điểm xuống 3/10: lặp lại tiêu đề tài liệu ở đầu mọi chunk khiến điểm similarity của mọi chunk trong cùng file tăng đều như nhau, xoá luôn phần khác biệt hữu ích giữa các chunk. **Đã revert.**
+  3. **`chunk_size=1000`, không filter Q1-Q4** (55 chunk) → 6/10. Mục bảng dài giờ lọt gọn trong 1 chunk, sửa được Q4 (0→2đ).
+  4. **`chunk_size=1000` + `metadata_filter={"audience":"buyer"}` cho Q1-Q4** (thống nhất với cấu hình chuẩn của nhóm) → **7/10**. Trước đó Q2 bị `seller-mall-return-obligations` (cùng từ vựng "trả hàng hoàn tiền" nhưng sai đối tượng) lấn lên top-1/2; lọc theo `audience: buyer` loại hẳn ứng viên sai đối tượng này, đưa Q2 lên đúng top-1 (1đ → 2đ).
 
-  **Điểm yếu còn lại (Q3):** đoạn hướng dẫn "Trò Chuyện Với Shopee" chỉ có 2 dòng thao tác ngắn (Bước 1, Bước 2) — quá ít chữ để embedding liên hệ với câu hỏi tự nhiên, xếp hạng 60/87 (score 0.481) trên toàn corpus dù đúng nội dung 100%. Không giải quyết được bằng cách chỉnh `chunk_size`/heading — cần embedder mạnh hơn (OpenAI/Gemini) hoặc kết hợp tìm kiếm từ khoá (hybrid BM25 + semantic) mới có cơ hội sửa, nằm ngoài phạm vi so sánh chunking của lab này.
+  **Điểm yếu còn lại (Q3):** đoạn hướng dẫn "Trò Chuyện Với Shopee" chỉ có 2 dòng thao tác ngắn (Bước 1, Bước 2) — quá ít chữ để embedding liên hệ với câu hỏi tự nhiên, xếp hạng rất thấp trên toàn corpus dù đúng nội dung 100%. Không giải quyết được bằng chunk_size/heading/filter — cần embedder mạnh hơn (OpenAI/Gemini) hoặc kết hợp tìm kiếm từ khoá (hybrid BM25 + semantic) mới có cơ hội sửa, nằm ngoài phạm vi so sánh chunking của lab này.
 - **Code snippet:**
 ```python
 class HeadingChunker:
@@ -110,7 +111,7 @@ class HeadingChunker:
 
 **Thành viên 4 — Nguyễn Hoàng Tuyên (Evaluation & Report Lead)**
 - **Loại chiến lược:** SentenceChunker
-- **Mô tả & lý do chọn:** *(Tuyên tự điền kết quả benchmark của mình vào đây — lưu ý: repo này đã từng chạy thử SentenceChunker trên corpus và đạt ~6/10 theo thang `docs/SCORING.md`, có thể dùng làm tham chiếu, xem lịch sử `bench.py`.)*
+- **Mô tả & lý do chọn:** *(Tuyên tự điền kết quả benchmark của mình vào đây — chạy `bench.py` với `CHUNKER = SentenceChunker(...)` và `metadata_filter={"audience":"buyer"}` cho Q1-Q4 / `{"audience":"seller"}` cho Q5, giống cấu hình chuẩn nhóm đang dùng, để điểm so sánh được công bằng.)*
 
 ### So Sánh Giữa Các Thành Viên
 
@@ -118,7 +119,7 @@ class HeadingChunker:
 |-----------|----------|----------------------|-----------|----------|
 | Phạm Xuân Quý | FixedSizeChunker | *(chờ Quý điền)* | Đơn giản, chunk đều nhau, tốc độ nạp nhanh | Cắt bất chấp ranh giới câu/số liệu |
 | Nguyễn Minh Thịnh | RecursiveChunker | *(chờ Thịnh điền)* | Bám ranh giới đoạn/câu tự nhiên tốt hơn fixed size | Chunk nhỏ, một mục có thể bị chia thành nhiều chunk rời rạc |
-| Vũ Minh Điềm | HeadingChunker (chunk_size=1000) | 6/10 (2đ Q1 + 1đ Q2 + 0đ Q3 + 2đ Q4 + 1đ Q5, theo `docs/SCORING.md`) | Đúng tài liệu 5/5 câu; tăng `chunk_size` sửa được lỗi bảng dài bị chẻ vụn (Q4: 0→2đ) | Đoạn hướng dẫn thao tác ngắn (Q3) vẫn xếp hạng rất thấp toàn corpus — giới hạn của embedder, không phải của chunking |
+| Vũ Minh Điềm | HeadingChunker (chunk_size=1000) | 7/10 (2đ Q1 + 2đ Q2 + 0đ Q3 + 2đ Q4 + 1đ Q5, theo `docs/SCORING.md`) | Đúng tài liệu 5/5 câu; filter đúng đối tượng + chunk_size hợp lý sửa được Q2 và Q4 (mỗi câu 0/1→2đ) | Đoạn hướng dẫn thao tác ngắn (Q3) vẫn xếp hạng rất thấp toàn corpus — giới hạn của embedder, không phải của chunking |
 | Nguyễn Hoàng Tuyên | SentenceChunker | *(chờ Tuyên điền)* | Giữ trọn câu, không cắt ngang ý | Chunk dài (gộp 3 câu) dễ trộn nhiều ý không liên quan trong cùng chunk |
 
 **Chiến lược nào tốt nhất cho chủ đề này? Tại sao?**
@@ -143,18 +144,22 @@ class HeadingChunker:
 ### Tổng hợp chất lượng truy xuất của nhóm
 
 > Cách chấm (theo `docs/SCORING.md`): **2 điểm/câu** — top-3 chứa chunk liên quan + agent trả lời đúng (2), có liên quan nhưng thiếu/không ở top-1 (1), không có trong top-3 (0).
-> Hàng dưới đây là kết quả của **Vũ Minh Điềm (HeadingChunker, chunk_size=1000)**; ba thành viên còn lại tự thêm cột/điểm của mình khi có kết quả.
+> Hàng dưới đây là kết quả của **Vũ Minh Điềm (HeadingChunker, chunk_size=1000, filter buyer/seller theo câu)**; ba thành viên còn lại tự thêm cột/điểm của mình khi có kết quả — dùng cùng cấu hình filter này để so sánh công bằng.
 
 | # | Câu hỏi | Chiến lược tốt nhất cho câu này (tạm) | Có chunk liên quan trong top-3? (Điềm — Heading) | Ghi chú |
 |---|---------|-------------------------------|-------------------------------|---------|
-| 1 | Thời hạn thực phẩm tươi sống | Heading (2đ) | Có, top-1, chứa đúng "24 giờ" | — |
-| 2 | Có hỗ trợ đổi hàng? | *(chờ so sánh)* | Có nhưng chỉ top-3 (Heading: 1đ) | Top-1/2 lạc sang `seller-mall-return-obligations` |
-| 3 | Cách gửi yêu cầu | *(chờ so sánh)* | Đúng tài liệu ở top-2 nhưng sai mục, không chứa đáp án (Heading: 0đ) | Đoạn thao tác ngắn "Trò Chuyện Với Shopee" xếp hạng 60/87 toàn corpus — giới hạn embedder, không sửa được bằng chunk_size |
+| 1 | Thời hạn thực phẩm tươi sống | Heading (2đ) | Có, top-1, chứa đúng "24 giờ" | Filter `buyer` |
+| 2 | Có hỗ trợ đổi hàng? | Heading (2đ) | Có, top-1, chứa đúng "Shopee hiện chưa hỗ trợ yêu cầu đổi hàng" | Filter `buyer` loại được `seller-mall-return-obligations` từng lạc lên top-1 khi không lọc |
+| 3 | Cách gửi yêu cầu | *(chờ so sánh)* | Đúng tài liệu ở top-2 nhưng sai mục, không chứa đáp án (Heading: 0đ) | Đoạn thao tác ngắn "Trò Chuyện Với Shopee" xếp hạng rất thấp toàn corpus — giới hạn embedder, filter không giúp được vì đối thủ cạnh tranh top-1 cũng là tài liệu buyer |
 | 4 | Thời gian hoàn tiền thẻ tín dụng | *(chờ so sánh)* | Có, top-1, chứa đúng "7-14 ngày" (Heading: 2đ) | Sửa được bằng cách tăng `chunk_size` 500→1000 để mục bảng dài không bị chẻ vụn nữa |
 | 5 | Thời hạn phản hồi seller | Heading (1đ) | Có nhưng chỉ top-2, chứa đúng "02 ngày lịch" — **chỉ khi có filter** | Không filter: top-3 toàn tài liệu `buyer-*`, mất hoàn toàn tài liệu seller đúng |
 
 **Lọc bằng metadata có giúp ích không? Ở câu hỏi nào?**
-> Có, rõ rệt nhất ở **câu 5**: chạy A/B trên cùng câu hỏi với `HeadingChunker`, khi **có** `metadata_filter={"audience":"seller"}` thì top-1 là đúng chunk cần (chứa "02 ngày lịch"); khi **không** filter thì cả 3 vị trí top-3 đều bị tài liệu `buyer-return-conditions` (nói về "hoàn tiền" nói chung, cùng từ vựng) chiếm hết, tài liệu seller đúng biến mất hoàn toàn khỏi top-3. Đây là bằng chứng trực tiếp cho ràng buộc #2 của `K4_VARIANT.md`: không có filter, agent gần như chắc chắn sẽ trả lời sai đối tượng.
+> Có, ở cả 2 chiều — dùng `HeadingChunker`, A/B từng câu:
+> - **Câu 5 (filter `seller`):** có filter → top-1 đúng chunk cần (chứa "02 ngày lịch"); không filter → cả 3 vị trí top-3 đều bị tài liệu `buyer-return-conditions`/`buyer-return-request-guide` (cùng từ vựng "hoàn tiền") chiếm hết, tài liệu seller đúng biến mất hoàn toàn khỏi top-3.
+> - **Câu 2 (filter `buyer`):** có filter → top-1 đúng chunk (`buyer-return-conditions`, chứa "Shopee hiện chưa hỗ trợ đổi hàng"); không filter → `seller-mall-return-obligations` (chủ đề gần giống, sai đối tượng) chiếm cả top-1 và top-2, đẩy đáp án đúng xuống top-3.
+>
+> Cả hai đều là bằng chứng trực tiếp cho ràng buộc #2 của `K4_VARIANT.md`: không có filter, agent gần như chắc chắn sẽ trả lời sai đối tượng ở những câu mà hai audience dùng chung nhiều từ vựng.
 
 ---
 

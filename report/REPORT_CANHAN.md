@@ -155,19 +155,22 @@ tests/test_solution.py::TestEmbeddingStoreDeleteDocument::test_delete_returns_tr
 
 **Chiến lược:** `HeadingChunker(chunk_size=1000)` — chunk theo tiêu đề/mục Markdown (`bench.py`), chạy trên corpus `data/shopee-return-refund/` (6 tài liệu, 55 chunk), embedder thật `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`. Chi tiết đầy đủ: `ket_qua_benchmark.txt`.
 
-> **Đã thử nghiệm 2 giá trị `chunk_size`.** Bản đầu dùng `chunk_size=500` (87 chunk) đạt 5/10. Đo lại với `chunk_size=1000` (55 chunk) đạt **6/10** — mục dài nhất trong corpus ("Phương thức thanh toán và thời gian hoàn tiền", ~900 ký tự) giờ lọt gọn trong 1 chunk thay vì bị `RecursiveChunker` chẻ thành nhiều mảnh cùng điểm số như trước (nguyên nhân Q4 = 0đ ở bản 500). Đã kiểm bằng cách trace điểm similarity từng chunk con trước khi đổi, không phải chỉnh số suông. Đánh đổi: Q5 tụt nhẹ từ top-1 xuống top-2 (vẫn còn đáp án đúng trong top-3, chỉ mất 1 điểm). Chi tiết thử nghiệm ở `report/REPORT_NHOM.md` mục 2.
+> **Ba vòng thử nghiệm, đo lại từng lần:**
+> 1. `chunk_size=500`, không filter cho Q1-Q4 → 5/10.
+> 2. `chunk_size=1000`, không filter cho Q1-Q4 → 6/10 (mục bảng dài không còn bị chẻ vụn, sửa Q4).
+> 3. `chunk_size=1000` + `metadata_filter={"audience":"buyer"}` cho Q1-Q4 (thống nhất với `bench.py` chuẩn của nhóm — Quý phát hiện thiếu bước này) → **7/10**: loại hẳn `seller-mall-return-obligations` khỏi ứng viên của Q1-Q4 nên Q2 từ "đúng nhưng lạc xuống top-3" thành **đúng top-1**.
 
 | # | Câu hỏi (Query) | Top-1 Chunk truy xuất được (tóm tắt) | Điểm Score | Có liên quan không? (Relevant) | Điểm theo SCORING.md |
 |---|-------|--------------------------------|-------|-----------|------------------------|
-| 1 | Thời hạn gửi yêu cầu Trả hàng/Hoàn tiền cho thực phẩm tươi sống/đông lạnh? | `buyer-return-conditions` — mục "1.2. Thời gian tối đa..." chứa đúng "24 giờ" | 0.708 | Có, đúng và chứa đáp án (top-1) | 2đ |
-| 2 | Shopee có hỗ trợ đổi hàng không? | `seller-mall-return-obligations` (SAI tài liệu ở top-1/2 — đáp án thật ở `buyer-return-conditions`, xếp hạng 3, có chứa đáp án) | 0.678 | Đúng nhưng chỉ ở top-3 | 1đ |
-| 3 | Người mua gửi yêu cầu bằng cách nào? | `buyer-refund-timeline` (SAI tài liệu ở top-1) — đúng tài liệu (`buyer-return-request-guide`) ở top-2 nhưng vẫn sai mục, không chứa "Trò Chuyện Với Shopee" | 0.695 | Đúng tài liệu (top-2), sai mục | 0đ |
-| 4 | Hoàn tiền về thẻ tín dụng/ghi nợ mất bao lâu? | `buyer-refund-timeline` — mục bảng phương thức hoàn tiền giờ **nguyên vẹn trong 1 chunk**, chứa đúng "7-14 ngày làm việc" | 0.702 | Có, đúng và chứa đáp án (top-1) | 2đ |
-| 5 | Yêu cầu hoàn tiền cần phản hồi trong bao lâu? (cần `metadata_filter={"audience":"seller"}`) | `seller-rights-and-duties` (SAI tài liệu ở top-1) — đáp án đúng ở top-2 (`seller-mall-return-obligations`, chứa "02 ngày lịch") | 0.490 | Đúng nhưng chỉ ở top-2 | 1đ |
+| 1 | Thời hạn gửi yêu cầu Trả hàng/Hoàn tiền cho thực phẩm tươi sống/đông lạnh? (filter `buyer`) | `buyer-return-conditions` — mục "1.2. Thời gian tối đa..." chứa đúng "24 giờ" | 0.708 | Có, đúng và chứa đáp án (top-1) | 2đ |
+| 2 | Shopee có hỗ trợ đổi hàng không? (filter `buyer`) | `buyer-return-conditions` — mục "1.1. Nguyên tắc chung" chứa đúng "Shopee hiện chưa hỗ trợ yêu cầu đổi hàng" | 0.642 | Có, đúng và chứa đáp án (top-1) | 2đ |
+| 3 | Người mua gửi yêu cầu bằng cách nào? (filter `buyer`) | `buyer-refund-timeline` (SAI tài liệu ở top-1, vẫn lọt vì cùng audience buyer) — đúng tài liệu (`buyer-return-request-guide`) ở top-2 nhưng vẫn sai mục | 0.695 | Đúng tài liệu (top-2), sai mục | 0đ |
+| 4 | Hoàn tiền về thẻ tín dụng/ghi nợ mất bao lâu? (filter `buyer`) | `buyer-refund-timeline` — mục bảng phương thức hoàn tiền nguyên vẹn trong 1 chunk, chứa đúng "7-14 ngày làm việc" | 0.702 | Có, đúng và chứa đáp án (top-1) | 2đ |
+| 5 | Yêu cầu hoàn tiền cần phản hồi trong bao lâu? (filter `seller`) | `seller-rights-and-duties` (SAI tài liệu ở top-1) — đáp án đúng ở top-2 (`seller-mall-return-obligations`, chứa "02 ngày lịch") | 0.490 | Đúng nhưng chỉ ở top-2 | 1đ |
 
-**Tổng điểm benchmark theo `docs/SCORING.md`: 6/10** (2+1+0+2+1).
+**Tổng điểm benchmark theo `docs/SCORING.md`: 7/10** (2+2+0+2+1).
 
-**Bao nhiêu câu hỏi trả về chunk có liên quan trong top-3?** 5 / 5 (đúng tài liệu gold luôn xuất hiện đâu đó trong top-3) — nhưng chỉ **2/5** câu (Q1, Q4) đạt đủ 2 điểm (top-1 + chứa đáp án). Đây đúng là điều `day7-lab-data-foundations.md` cảnh báo: chấm theo `doc_id` một mình sẽ thổi phồng kết quả — Q3 vẫn "trông đúng" (đúng tài liệu ở top-2) nhưng chunk cụ thể không chứa câu trả lời, vì đoạn hướng dẫn "Trò Chuyện Với Shopee" quá ngắn/mang tính thao tác nên embedding không liên hệ tốt với câu hỏi tự nhiên (đã trace: chunk đó xếp hạng rất thấp trong toàn corpus).
+**Bao nhiêu câu hỏi trả về chunk có liên quan trong top-3?** 5 / 5 (đúng tài liệu gold luôn xuất hiện đâu đó trong top-3) — và **3/5** câu (Q1, Q2, Q4) đạt đủ 2 điểm (top-1 + chứa đáp án) sau khi thêm filter đúng đối tượng cho từng câu. Q3 là điểm yếu còn lại: đúng tài liệu ở top-2 nhưng chunk cụ thể không chứa câu trả lời, vì đoạn hướng dẫn "Trò Chuyện Với Shopee" quá ngắn/mang tính thao tác nên embedding không liên hệ tốt với câu hỏi tự nhiên (đã trace: chunk đó xếp hạng rất thấp trong toàn corpus, không sửa được bằng filter hay chunk_size).
 
 **A/B bắt buộc (câu 5, có/không `metadata_filter={"audience":"seller"}`):** không lọc, top-3 đổi hoàn toàn thành 3 chunk của tài liệu buyer (`buyer-return-conditions`, `buyer-return-request-guide`) — chứng minh rõ ràng filter theo `audience` là bắt buộc để không lẫn giữa hai đối tượng, đúng ràng buộc #2 của K4_VARIANT.md.
 

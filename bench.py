@@ -33,9 +33,9 @@ from src.store import EmbeddingStore
 CORPUS_DIR = Path("data/shopee-return-refund")
 
 # Mỗi thành viên chỉ đổi DÒNG NÀY sang chiến lược của mình để so sánh công bằng.
-# chunk_size=1000 (thay vì 500 mặc định): đo thực nghiệm cho 6/10 thay vì 5/10 —
-# mục "Phương thức thanh toán..." (~900 ký tự) giờ lọt gọn 1 chunk thay vì bị
-# RecursiveChunker chẻ vụn thành nhiều mảnh cùng điểm số (xem REPORT_NHOM.md mục 2).
+# chunk_size=1000 (thay vì 500 mặc định): đo thực nghiệm 7/10 (xem nhật ký
+# tinh chỉnh đầy đủ ở REPORT_NHOM.md mục 2 — chunk_size sửa Q4, filter buyer
+# trên Q1-Q4 sửa Q2).
 CHUNKER = HeadingChunker(chunk_size=1000)
 # CHUNKER = FixedSizeChunker(chunk_size=500, overlap=50)  # Phạm Xuân Quý
 # CHUNKER = RecursiveChunker(chunk_size=500)               # Nguyễn Minh Thịnh
@@ -53,7 +53,7 @@ QUERIES = [
         ),
         "gold_doc_id": "buyer-return-conditions",
         "answer_fragment": "trong vòng 24 giờ kể từ lúc",
-        "metadata_filter": None,
+        "metadata_filter": {"audience": "buyer"},
     },
     {
         "question": (
@@ -66,7 +66,7 @@ QUERIES = [
         ),
         "gold_doc_id": "buyer-return-conditions",
         "answer_fragment": "shopee hiện chưa hỗ trợ yêu cầu đổi hàng",
-        "metadata_filter": None,
+        "metadata_filter": {"audience": "buyer"},
     },
     {
         "question": "Người mua có thể gửi yêu cầu Trả hàng/Hoàn tiền bằng những cách nào?",
@@ -76,7 +76,7 @@ QUERIES = [
         ),
         "gold_doc_id": "buyer-return-request-guide",
         "answer_fragment": "trò chuyện với shopee",
-        "metadata_filter": None,
+        "metadata_filter": {"audience": "buyer"},
     },
     {
         "question": (
@@ -86,7 +86,7 @@ QUERIES = [
         "gold_answer": "Khoảng 7-14 ngày làm việc, tùy theo ngân hàng.",
         "gold_doc_id": "buyer-refund-timeline",
         "answer_fragment": "7 - 14 ngày làm việc",
-        "metadata_filter": None,
+        "metadata_filter": {"audience": "buyer"},
     },
     {
         "question": "Một yêu cầu hoàn tiền cần được phản hồi trong bao lâu?",
