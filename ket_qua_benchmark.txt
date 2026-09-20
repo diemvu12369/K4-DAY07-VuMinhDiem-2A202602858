@@ -1,0 +1,63 @@
+﻿Embedding backend: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+Chunking strategy: HeadingChunker
+Loaded 87 chunks from 6 files in data\shopee-return-refund
+
+=== Query 1: Với thực phẩm tươi sống và đông lạnh, người mua phải gửi yêu cầu Trả hàng/Hoàn tiền trong thời hạn bao lâu?
+Gold answer : Trong vòng 24 giờ kể từ khi đơn hàng được cập nhật trạng thái “Giao hàng thành công”, trừ trường hợp chưa nhận được hàng.
+Gold doc_id : buyer-return-conditions
+Filter      : None
+  top-1 score=0.713 doc_id=buyer-return-conditions chua_dap_an=True <-- gold doc
+          ### 1.2. Thời gian tối đa để gửi yêu cầu trả hàng hoàn tiền cho Shopee  Thời gian để Shopee tiếp nhận yêu cầu Trả hàng/Hoàn tiền từ bạn sẽ là:  Đối với đơn hàng...
+  top-2 score=0.577 doc_id=buyer-return-conditions chua_dap_an=False <-- gold doc
+          ### 1.2. Thời gian tối đa để gửi yêu cầu trả hàng hoàn tiền cho Shopee + 20 ngày kể từ lúc đơn hàng được cập nhật trạng thái ‘Lấy hàng thành công’ và bạn không ...
+  top-3 score=0.570 doc_id=buyer-return-conditions chua_dap_an=False <-- gold doc
+          ### 1.2. Thời gian tối đa để gửi yêu cầu trả hàng hoàn tiền cho Shopee *Các ngày trong tuần không bao gồm thứ Bảy, Chủ Nhật và các ngày nghỉ lễ/Tết theo quy địn...
+
+=== Query 2: Shopee có hỗ trợ yêu cầu đổi hàng không, và người mua có thể làm gì nếu hàng nhận được có vấn đề?
+Gold answer : Shopee chưa hỗ trợ đổi hàng. Người mua có thể từ chối nhận khi đồng kiểm hoặc gửi yêu cầu Trả hàng/Hoàn tiền sau khi nhận hàng.
+Gold doc_id : buyer-return-conditions
+Filter      : None
+  top-1 score=0.678 doc_id=seller-mall-return-obligations chua_dap_an=False 
+          # Nghĩa vụ người bán Shopee Mall khi xử lý trả hàng...
+  top-2 score=0.642 doc_id=buyer-return-conditions chua_dap_an=True <-- gold doc
+          ### 1.1. Nguyên tắc chung  Shopee hiện chưa hỗ trợ yêu cầu đổi hàng. Nếu hàng nhận được có vấn đề (khác với mô tả, hư hỏng,...), bạn có thể từ chối nhận hàng kh...
+  top-3 score=0.637 doc_id=buyer-return-processing chua_dap_an=False 
+          ## 1. Nguyên tắc chung  Tùy từng trường hợp cụ thể, yêu cầu Trả hàng/ Hoàn tiền của bạn sẽ được Shopee chấp nhận cho Trả hàng ngay sau khi gửi yêu cầu hoặc được...
+
+=== Query 3: Người mua có thể gửi yêu cầu Trả hàng/Hoàn tiền bằng những cách nào?
+Gold answer : Gửi trực tiếp tại trang đơn hàng hoặc gửi tại mục Trò Chuyện Với Shopee rồi chọn “Khiếu nại trả hàng hoàn tiền”.
+Gold doc_id : buyer-return-request-guide
+Filter      : None
+  top-1 score=0.715 doc_id=buyer-return-request-guide chua_dap_an=False <-- gold doc
+          ## 2. Lưu ý Trường hợp Trả lại & Hoàn tiền  Bạn cần trả lại sản phẩm bằng cách yêu cầu bưu tá đến lấy hoặc tự ra bưu cục gửi. Sản phẩm sẽ được Người bán/Shopee ...
+  top-2 score=0.695 doc_id=buyer-refund-timeline chua_dap_an=False 
+          ## Phương thức thanh toán và thời gian hoàn tiền Nếu bạn gửi yêu cầu THHT sau khi đơn cập nhật trạng thái “Hoàn thành” - giao dịch trả góp đã được gh...
+  top-3 score=0.677 doc_id=buyer-return-request-guide chua_dap_an=False <-- gold doc
+          ## 1. Hướng dẫn gửi yêu cầu Trả hàng/Hoàn tiền  Khi cần yêu cầu trả hàng hoặc hoàn tiền trên Shopee, bạn có thể thực hiện theo một trong hai cách sau....
+
+=== Query 4: Sau khi Shopee chấp nhận hoàn tiền, tiền hoàn về thẻ tín dụng hoặc thẻ ghi nợ mất bao lâu?
+Gold answer : Khoảng 7-14 ngày làm việc, tùy theo ngân hàng.
+Gold doc_id : buyer-refund-timeline
+Filter      : None
+  top-1 score=0.715 doc_id=buyer-refund-timeline chua_dap_an=False <-- gold doc
+          ## Phương thức thanh toán và thời gian hoàn tiền  Tiền hoàn trả được gửi qua  Thời gian nhận được tiền hoàn sau khi Shopee chấp nhận hoàn tiền  Thanh toán khi n...
+  top-2 score=0.701 doc_id=buyer-refund-timeline chua_dap_an=False <-- gold doc
+          ## Phương thức thanh toán và thời gian hoàn tiền Nếu bạn gửi yêu cầu THHT sau khi đơn cập nhật trạng thái “Hoàn thành” - giao dịch trả góp đã được gh...
+  top-3 score=0.688 doc_id=buyer-refund-timeline chua_dap_an=False <-- gold doc
+          # Thời gian nhận tiền hoàn và cách kiểm tra  Sau khi gửi trả hàng, bạn sẽ nhận được thông báo xác nhận hoàn tiền qua mục Thông báo > Cập nhật đơn hàng trên ứng ...
+
+=== Query 5: Một yêu cầu hoàn tiền cần được phản hồi trong bao lâu?
+Gold answer : Đối với Người Bán, yêu cầu “Hoàn Tiền Ngay” phải được phản hồi hoặc khiếu nại trong vòng 02 ngày lịch. Nếu không phản hồi, Người Bán được xem là đồng ý với quyết định của Shopee.
+Gold doc_id : seller-mall-return-obligations
+Filter      : {'audience': 'seller'}
+  top-1 score=0.512 doc_id=seller-mall-return-obligations chua_dap_an=True <-- gold doc
+          ## Phản hồi yêu cầu Hoàn Tiền Ngay  Đối với trường hợp Shopee chủ động chấp nhận “Hoàn Tiền Ngay”, Người Mua được hoàn tiền mà không cần phải hoàn trả Sản Phẩm ...
+  top-2 score=0.504 doc_id=seller-mall-return-obligations chua_dap_an=False <-- gold doc
+          ## Cung cấp bằng chứng  Trong hầu hết các trường hợp, Shopee sẽ xử lý và đưa ra quyết định cuối cùng liên quan đến yêu cầu trả hàng hoàn tiền của Người Mua tron...
+  top-3 score=0.496 doc_id=seller-mall-return-obligations chua_dap_an=False <-- gold doc
+          ## Khiếu nại về sản phẩm hoàn trả Đối với Sản Phẩm Hoàn Trả bị hư hại do vận chuyển, Người Bán cần gửi email khiếu nại kèm ảnh hoặc video bằng chứng cho Shopee ...
+  --- A/B: cùng câu hỏi KHÔNG dùng metadata_filter ---
+  no-filter top-1 score=0.684 doc_id=buyer-return-conditions
+  no-filter top-2 score=0.650 doc_id=buyer-return-conditions
+  no-filter top-3 score=0.637 doc_id=buyer-return-conditions
+
