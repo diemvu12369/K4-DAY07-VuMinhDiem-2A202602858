@@ -1,6 +1,6 @@
 # Báo Cáo Nhóm — Lab 7: Embedding & Vector Store
 
-**Nhóm:** Shopee Return & Refund
+**Nhóm:** DeltaX
 **Thành viên:** Phạm Xuân Quý (2A202602745), Nguyễn Minh Thịnh (2A202602556), Vũ Minh Điềm (2A202602858), Nguyễn Hoàng Tuyên (2A202602439)
 **Ngày:** 2026-09-19
 

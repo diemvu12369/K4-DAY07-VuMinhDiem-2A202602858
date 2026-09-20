@@ -1,4 +1,4 @@
-"""Benchmark harness for K4-L3B — nhóm Shopee Return & Refund.
+"""Benchmark harness for K4-L3B — nhóm DeltaX.
 
 Chiến lược của Vũ Minh Điềm (Strategy Lead): HeadingChunker — chunk theo
 tiêu đề/mục (##, ###) của văn bản chính sách gốc.

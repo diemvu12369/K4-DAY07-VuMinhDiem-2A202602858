@@ -2,7 +2,7 @@
 
 **Họ tên:** Vũ Minh Điềm
 **MSSV:** 2A202602858
-**Nhóm:** Shopee Return & Refund
+**Nhóm:** DeltaX
 **Vai trò trong nhóm:** Strategy Lead — chiến lược chunking theo heading/mục
 **Ngày:** 2026-09-20
 
