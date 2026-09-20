@@ -153,19 +153,23 @@ tests/test_solution.py::TestEmbeddingStoreDeleteDocument::test_delete_returns_tr
 
 ## 5. Kết quả truy xuất của tôi (Competition Results) — Cá nhân (10 điểm)
 
-**Chiến lược:** `HeadingChunker(chunk_size=500)` — chunk theo tiêu đề/mục Markdown (`bench.py`), chạy trên corpus `data/shopee-return-refund/` (6 tài liệu, 87 chunk), embedder thật `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`. Chi tiết đầy đủ: `ket_qua_benchmark.txt`.
+**Chiến lược:** `HeadingChunker(chunk_size=1000)` — chunk theo tiêu đề/mục Markdown (`bench.py`), chạy trên corpus `data/shopee-return-refund/` (6 tài liệu, 55 chunk), embedder thật `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`. Chi tiết đầy đủ: `ket_qua_benchmark.txt`.
 
-| # | Câu hỏi (Query) | Top-1 Chunk truy xuất được (tóm tắt) | Điểm Score | Có liên quan không? (Relevant) | Câu trả lời của Agent (tóm tắt) |
+> **Đã thử nghiệm 2 giá trị `chunk_size`.** Bản đầu dùng `chunk_size=500` (87 chunk) đạt 5/10. Đo lại với `chunk_size=1000` (55 chunk) đạt **6/10** — mục dài nhất trong corpus ("Phương thức thanh toán và thời gian hoàn tiền", ~900 ký tự) giờ lọt gọn trong 1 chunk thay vì bị `RecursiveChunker` chẻ thành nhiều mảnh cùng điểm số như trước (nguyên nhân Q4 = 0đ ở bản 500). Đã kiểm bằng cách trace điểm similarity từng chunk con trước khi đổi, không phải chỉnh số suông. Đánh đổi: Q5 tụt nhẹ từ top-1 xuống top-2 (vẫn còn đáp án đúng trong top-3, chỉ mất 1 điểm). Chi tiết thử nghiệm ở `report/REPORT_NHOM.md` mục 2.
+
+| # | Câu hỏi (Query) | Top-1 Chunk truy xuất được (tóm tắt) | Điểm Score | Có liên quan không? (Relevant) | Điểm theo SCORING.md |
 |---|-------|--------------------------------|-------|-----------|------------------------|
-| 1 | Thời hạn gửi yêu cầu Trả hàng/Hoàn tiền cho thực phẩm tươi sống/đông lạnh? | `buyer-return-conditions` — mục "1.2. Thời gian tối đa..." chứa đúng "24 giờ" | 0.713 | Có, đúng và chứa đáp án | Trích chunk [1], đúng nguồn `buyer-return-conditions` |
-| 2 | Shopee có hỗ trợ đổi hàng không? | `seller-mall-return-obligations` (SAI tài liệu — đáp án thật ở `buyer-return-conditions`, xếp hạng 2) | 0.678 | Không (top-1); đúng ở top-2 | Dựa trên chunk [1] sai audience, câu trả lời không đáng tin |
-| 3 | Người mua gửi yêu cầu bằng cách nào? | `buyer-return-request-guide` — đúng tài liệu nhưng đúng mục "2. Lưu ý..." chứ không phải mục nêu 2 cách gửi | 0.715 | Đúng tài liệu, sai mục | Không nêu được 2 cách gửi cụ thể vì thiếu đúng đoạn |
-| 4 | Hoàn tiền về thẻ tín dụng/ghi nợ mất bao lâu? | `buyer-refund-timeline` — đúng tài liệu, đúng mục bảng phương thức hoàn tiền, nhưng dòng "7-14 ngày" nằm ở một mảnh con khác của cùng mục (mục bị cắt nhỏ vì bảng dài) | 0.715 | Đúng tài liệu, đúng mục, thiếu đúng dòng số liệu | Không trích được con số 7–14 ngày cụ thể |
-| 5 | Yêu cầu hoàn tiền cần phản hồi trong bao lâu? (cần `metadata_filter={"audience":"seller"}`) | `seller-mall-return-obligations` — đúng mục "Phản hồi yêu cầu Hoàn Tiền Ngay", chứa đúng "02 ngày lịch" | 0.512 | Có, đúng và chứa đáp án | Trích chunk [1], đúng nguồn, đúng đối tượng seller |
+| 1 | Thời hạn gửi yêu cầu Trả hàng/Hoàn tiền cho thực phẩm tươi sống/đông lạnh? | `buyer-return-conditions` — mục "1.2. Thời gian tối đa..." chứa đúng "24 giờ" | 0.708 | Có, đúng và chứa đáp án (top-1) | 2đ |
+| 2 | Shopee có hỗ trợ đổi hàng không? | `seller-mall-return-obligations` (SAI tài liệu ở top-1/2 — đáp án thật ở `buyer-return-conditions`, xếp hạng 3, có chứa đáp án) | 0.678 | Đúng nhưng chỉ ở top-3 | 1đ |
+| 3 | Người mua gửi yêu cầu bằng cách nào? | `buyer-refund-timeline` (SAI tài liệu ở top-1) — đúng tài liệu (`buyer-return-request-guide`) ở top-2 nhưng vẫn sai mục, không chứa "Trò Chuyện Với Shopee" | 0.695 | Đúng tài liệu (top-2), sai mục | 0đ |
+| 4 | Hoàn tiền về thẻ tín dụng/ghi nợ mất bao lâu? | `buyer-refund-timeline` — mục bảng phương thức hoàn tiền giờ **nguyên vẹn trong 1 chunk**, chứa đúng "7-14 ngày làm việc" | 0.702 | Có, đúng và chứa đáp án (top-1) | 2đ |
+| 5 | Yêu cầu hoàn tiền cần phản hồi trong bao lâu? (cần `metadata_filter={"audience":"seller"}`) | `seller-rights-and-duties` (SAI tài liệu ở top-1) — đáp án đúng ở top-2 (`seller-mall-return-obligations`, chứa "02 ngày lịch") | 0.490 | Đúng nhưng chỉ ở top-2 | 1đ |
 
-**Bao nhiêu câu hỏi trả về chunk có liên quan trong top-3?** 5 / 5 (đúng tài liệu gold xuất hiện ở top-3 cho cả 5 câu) — nhưng chỉ **2/5** câu (Q1, Q5) vừa đúng tài liệu **vừa** đúng đến mức chunk chứa nguyên văn đáp án ở top-1. Đây đúng là điều `day7-lab-data-foundations.md` cảnh báo: chấm theo `doc_id` một mình sẽ thổi phồng kết quả — Q3 và Q4 "trông đúng" (đúng file, thậm chí đúng mục) nhưng chunk cụ thể lọt top-k lại không chứa số liệu/câu trả lời cần thiết.
+**Tổng điểm benchmark theo `docs/SCORING.md`: 6/10** (2+1+0+2+1).
 
-**A/B bắt buộc (câu 5, có/không `metadata_filter={"audience":"seller"}`):** không lọc, top-3 đổi hoàn toàn thành 3 chunk của `buyer-return-conditions` (tài liệu buyer, sai đối tượng) — chứng minh rõ ràng filter theo `audience` là bắt buộc để không lẫn giữa hai đối tượng, đúng ràng buộc #2 của K4_VARIANT.md.
+**Bao nhiêu câu hỏi trả về chunk có liên quan trong top-3?** 5 / 5 (đúng tài liệu gold luôn xuất hiện đâu đó trong top-3) — nhưng chỉ **2/5** câu (Q1, Q4) đạt đủ 2 điểm (top-1 + chứa đáp án). Đây đúng là điều `day7-lab-data-foundations.md` cảnh báo: chấm theo `doc_id` một mình sẽ thổi phồng kết quả — Q3 vẫn "trông đúng" (đúng tài liệu ở top-2) nhưng chunk cụ thể không chứa câu trả lời, vì đoạn hướng dẫn "Trò Chuyện Với Shopee" quá ngắn/mang tính thao tác nên embedding không liên hệ tốt với câu hỏi tự nhiên (đã trace: chunk đó xếp hạng rất thấp trong toàn corpus).
+
+**A/B bắt buộc (câu 5, có/không `metadata_filter={"audience":"seller"}`):** không lọc, top-3 đổi hoàn toàn thành 3 chunk của tài liệu buyer (`buyer-return-conditions`, `buyer-return-request-guide`) — chứng minh rõ ràng filter theo `audience` là bắt buộc để không lẫn giữa hai đối tượng, đúng ràng buộc #2 của K4_VARIANT.md.
 
 **Điều hay nhất tôi học được từ thành viên khác / nhóm khác (qua demo):**
 > *(điền sau buổi demo của nhóm DeltaX — so sánh HeadingChunker của tôi với FixedSize (Quý), Recursive (Thịnh), Sentence (Tuyên) trên cùng 5 câu hỏi)*

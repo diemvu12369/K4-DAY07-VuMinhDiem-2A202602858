@@ -126,6 +126,14 @@ class HeadingChunker:
     A section longer than chunk_size is handed to RecursiveChunker, and its heading
     is re-attached to every resulting sub-chunk so later fragments don't lose the
     "which section is this about" context.
+
+    Tried and reverted: prepending each chunk with its ancestor heading(s) as a
+    breadcrumb (for nested ### under ##). Measured on data/shopee-return-refund/
+    with the real local embedder, it *lowered* the 5-query benchmark score
+    (5/10 -> 3/10, see report/REPORT_NHOM.md) — repeating the document title on
+    every chunk of a file raises all of that file's chunks' similarity roughly
+    uniformly, which drowned out the distinguishing content between chunks more
+    than it added useful context. Kept the flat per-heading version instead.
     """
 
     HEADING_RE = re.compile(r"^(#{1,6})\s+.*$", re.MULTILINE)

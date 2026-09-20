@@ -86,8 +86,15 @@ Nhận xét chung: `fixed_size` luôn cho chunk đều nhau (~195-200 ký tự) 
 - **Mô tả & lý do chọn:** *(Thịnh tự điền kết quả benchmark của mình vào đây)*
 
 **Thành viên 3 — Vũ Minh Điềm (Strategy Lead)**
-- **Loại chiến lược:** HeadingChunker (custom — chunk theo tiêu đề/mục Markdown)
-- **Mô tả & lý do chọn cho chủ đề này:** Văn bản chính sách Shopee đã được viết theo mục có heading (`## 1. Nguyên tắc chung`, `### 1.2. Thời gian tối đa...`), mỗi mục là một đơn vị ngữ nghĩa trọn vẹn do người soạn chia sẵn — chunk theo heading tận dụng đúng cấu trúc đó thay vì cắt cơ học. Trên corpus 6 tài liệu (87 chunk), chiến lược này cho **top-1 đúng tài liệu ở cả 5/5 câu hỏi**, và câu cần `metadata_filter={"audience":"seller"}` đạt điểm tối đa (top-1 đúng mục, chứa đúng đáp án "02 ngày lịch"). Điểm yếu quan sát được: khi một mục dài bị hạ xuống `RecursiveChunker` (vd. bảng "Phương thức thanh toán và thời gian hoàn tiền"), các mảnh con cùng một mục có nội dung/điểm số rất gần nhau nên **mảnh con nào lọt top-3 gần như ngẫu nhiên** — 2/5 câu (Q3, Q4) đúng tài liệu, đúng mục nhưng chunk cụ thể lọt top-k lại thiếu đúng dòng số liệu cần trả lời (xem `ket_qua_benchmark.txt`, mục 4 báo cáo cá nhân của Điềm).
+- **Loại chiến lược:** HeadingChunker (custom — chunk theo tiêu đề/mục Markdown), `chunk_size=1000`
+- **Mô tả & lý do chọn cho chủ đề này:** Văn bản chính sách Shopee đã được viết theo mục có heading (`## 1. Nguyên tắc chung`, `### 1.2. Thời gian tối đa...`), mỗi mục là một đơn vị ngữ nghĩa trọn vẹn do người soạn chia sẵn — chunk theo heading tận dụng đúng cấu trúc đó thay vì cắt cơ học. Trên corpus 6 tài liệu (55 chunk), tài liệu gold luôn xuất hiện đâu đó trong top-3 cho cả 5/5 câu hỏi, và câu cần `metadata_filter={"audience":"seller"}` có đáp án đúng trong top-3 — điểm benchmark theo `docs/SCORING.md`: **6/10** (2+1+0+2+1).
+
+  **Nhật ký tinh chỉnh `chunk_size` (thử nghiệm thật, có đo lại, không đoán):**
+  1. **`chunk_size=500`** (87 chunk) → 5/10. Trace từng chunk cho thấy mục "Phương thức thanh toán và thời gian hoàn tiền" (~900 ký tự, liệt kê 7 phương thức) dài hơn 500 nên bị `RecursiveChunker` hạ xuống, chẻ thành ~10 mảnh nhỏ cùng chủ đề — mảnh chứa đúng "thẻ tín dụng → 7-14 ngày" xếp hạng **9/10 trong chính file đó** (thua các mảnh mở đầu chung chung chỉ vì trùng từ vựng câu hỏi nhiều hơn). Đây là nguyên nhân Q4 = 0đ.
+  2. **Thử thêm breadcrumb** (gắn tiêu đề cha vào mỗi chunk con) — làm **giảm** điểm xuống 3/10: lặp lại tiêu đề tài liệu ở đầu mọi chunk khiến điểm similarity của mọi chunk trong cùng file tăng đều như nhau, xoá luôn phần khác biệt hữu ích giữa các chunk (Q2, Q5 đang đúng bị lệch hướng). **Đã revert.**
+  3. **`chunk_size=1000`** (55 chunk, áp dụng chính thức) → 6/10. Mục bảng dài giờ lọt gọn trong 1 chunk, chunk top-1 của Q4 chứa đúng "7-14 ngày làm việc". Đánh đổi: Q5 tụt nhẹ từ top-1 xuống top-2 (đáp án đúng vẫn còn trong top-3, chỉ mất 1/2 điểm).
+
+  **Điểm yếu còn lại (Q3):** đoạn hướng dẫn "Trò Chuyện Với Shopee" chỉ có 2 dòng thao tác ngắn (Bước 1, Bước 2) — quá ít chữ để embedding liên hệ với câu hỏi tự nhiên, xếp hạng 60/87 (score 0.481) trên toàn corpus dù đúng nội dung 100%. Không giải quyết được bằng cách chỉnh `chunk_size`/heading — cần embedder mạnh hơn (OpenAI/Gemini) hoặc kết hợp tìm kiếm từ khoá (hybrid BM25 + semantic) mới có cơ hội sửa, nằm ngoài phạm vi so sánh chunking của lab này.
 - **Code snippet:**
 ```python
 class HeadingChunker:
@@ -111,7 +118,7 @@ class HeadingChunker:
 |-----------|----------|----------------------|-----------|----------|
 | Phạm Xuân Quý | FixedSizeChunker | *(chờ Quý điền)* | Đơn giản, chunk đều nhau, tốc độ nạp nhanh | Cắt bất chấp ranh giới câu/số liệu |
 | Nguyễn Minh Thịnh | RecursiveChunker | *(chờ Thịnh điền)* | Bám ranh giới đoạn/câu tự nhiên tốt hơn fixed size | Chunk nhỏ, một mục có thể bị chia thành nhiều chunk rời rạc |
-| Vũ Minh Điềm | HeadingChunker | 5/10 (2đ Q1 + 1đ Q2 + 0đ Q3 + 0đ Q4 + 2đ Q5, theo `docs/SCORING.md`) | Đúng tài liệu 5/5 câu; câu cần metadata_filter đạt điểm tối đa | Mục dài bị hạ xuống recursive nên "sai section trong đúng mục" ở câu có số liệu nằm giữa bảng dài |
+| Vũ Minh Điềm | HeadingChunker (chunk_size=1000) | 6/10 (2đ Q1 + 1đ Q2 + 0đ Q3 + 2đ Q4 + 1đ Q5, theo `docs/SCORING.md`) | Đúng tài liệu 5/5 câu; tăng `chunk_size` sửa được lỗi bảng dài bị chẻ vụn (Q4: 0→2đ) | Đoạn hướng dẫn thao tác ngắn (Q3) vẫn xếp hạng rất thấp toàn corpus — giới hạn của embedder, không phải của chunking |
 | Nguyễn Hoàng Tuyên | SentenceChunker | *(chờ Tuyên điền)* | Giữ trọn câu, không cắt ngang ý | Chunk dài (gộp 3 câu) dễ trộn nhiều ý không liên quan trong cùng chunk |
 
 **Chiến lược nào tốt nhất cho chủ đề này? Tại sao?**
@@ -136,15 +143,15 @@ class HeadingChunker:
 ### Tổng hợp chất lượng truy xuất của nhóm
 
 > Cách chấm (theo `docs/SCORING.md`): **2 điểm/câu** — top-3 chứa chunk liên quan + agent trả lời đúng (2), có liên quan nhưng thiếu/không ở top-1 (1), không có trong top-3 (0).
-> Hàng dưới đây là kết quả của **Vũ Minh Điềm (HeadingChunker)**; ba thành viên còn lại tự thêm cột/điểm của mình khi có kết quả.
+> Hàng dưới đây là kết quả của **Vũ Minh Điềm (HeadingChunker, chunk_size=1000)**; ba thành viên còn lại tự thêm cột/điểm của mình khi có kết quả.
 
 | # | Câu hỏi | Chiến lược tốt nhất cho câu này (tạm) | Có chunk liên quan trong top-3? (Điềm — Heading) | Ghi chú |
 |---|---------|-------------------------------|-------------------------------|---------|
 | 1 | Thời hạn thực phẩm tươi sống | Heading (2đ) | Có, top-1, chứa đúng "24 giờ" | — |
-| 2 | Có hỗ trợ đổi hàng? | *(chờ so sánh)* | Có nhưng chỉ top-2 (Heading: 1đ) | Top-1 lạc sang `seller-mall-return-obligations` |
-| 3 | Cách gửi yêu cầu | *(chờ so sánh)* | Đúng tài liệu (top-1 & top-3) nhưng sai mục, không chứa đáp án (Heading: 0đ) | Minh chứng "đúng file, sai section" |
-| 4 | Thời gian hoàn tiền thẻ tín dụng | *(chờ so sánh)* | Đúng tài liệu cả 3, nhưng mục dài (bảng) bị chẻ nhỏ nên dòng "7-14 ngày" rơi ra ngoài top-3 (Heading: 0đ) | Minh chứng "đúng mục, sai mảnh con" |
-| 5 | Thời hạn phản hồi seller | Heading (2đ) | Có, top-1, chứa đúng "02 ngày lịch" — **chỉ khi có filter** | Không filter: top-3 toàn tài liệu `buyer-*`, mất hoàn toàn tài liệu seller đúng |
+| 2 | Có hỗ trợ đổi hàng? | *(chờ so sánh)* | Có nhưng chỉ top-3 (Heading: 1đ) | Top-1/2 lạc sang `seller-mall-return-obligations` |
+| 3 | Cách gửi yêu cầu | *(chờ so sánh)* | Đúng tài liệu ở top-2 nhưng sai mục, không chứa đáp án (Heading: 0đ) | Đoạn thao tác ngắn "Trò Chuyện Với Shopee" xếp hạng 60/87 toàn corpus — giới hạn embedder, không sửa được bằng chunk_size |
+| 4 | Thời gian hoàn tiền thẻ tín dụng | *(chờ so sánh)* | Có, top-1, chứa đúng "7-14 ngày" (Heading: 2đ) | Sửa được bằng cách tăng `chunk_size` 500→1000 để mục bảng dài không bị chẻ vụn nữa |
+| 5 | Thời hạn phản hồi seller | Heading (1đ) | Có nhưng chỉ top-2, chứa đúng "02 ngày lịch" — **chỉ khi có filter** | Không filter: top-3 toàn tài liệu `buyer-*`, mất hoàn toàn tài liệu seller đúng |
 
 **Lọc bằng metadata có giúp ích không? Ở câu hỏi nào?**
 > Có, rõ rệt nhất ở **câu 5**: chạy A/B trên cùng câu hỏi với `HeadingChunker`, khi **có** `metadata_filter={"audience":"seller"}` thì top-1 là đúng chunk cần (chứa "02 ngày lịch"); khi **không** filter thì cả 3 vị trí top-3 đều bị tài liệu `buyer-return-conditions` (nói về "hoàn tiền" nói chung, cùng từ vựng) chiếm hết, tài liệu seller đúng biến mất hoàn toàn khỏi top-3. Đây là bằng chứng trực tiếp cho ràng buộc #2 của `K4_VARIANT.md`: không có filter, agent gần như chắc chắn sẽ trả lời sai đối tượng.
@@ -163,7 +170,7 @@ class HeadingChunker:
 > *(điền sau khi Quý/Thịnh/Tuyên có kết quả benchmark của mình — so `count`/`avg_length` ở Baseline Analysis mục 2 và điểm `docs/SCORING.md` mục 3 giữa 4 chiến lược trên cùng corpus)*
 
 **Nếu làm lại, nhóm sẽ thay đổi gì trong chiến lược dữ liệu (data strategy)?**
-> Từ góc nhìn `HeadingChunker`: nên giảm `chunk_size` cho các mục chứa bảng (vd. bảng phương thức hoàn tiền trong `buyer-refund-timeline`) hoặc tách bảng thành các dòng riêng trước khi crawl/làm sạch, để mỗi dòng số liệu (vd. "thẻ tín dụng — 7-14 ngày") là một đơn vị chunk độc lập thay vì bị gộp chung rồi cắt ngẫu nhiên bởi recursive fallback.
+> Từ góc nhìn `HeadingChunker`: thực nghiệm cho thấy hướng đúng là **tăng** `chunk_size` (500→1000) để mục chứa bảng dài (bảng phương thức hoàn tiền trong `buyer-refund-timeline`) không bị `RecursiveChunker` chẻ vụn thành nhiều mảnh cùng điểm số (Q4: 0→2đ) — ngược với trực giác ban đầu là "giảm để mịn hơn". Nhưng cách sửa triệt để hơn vẫn là **làm sạch dữ liệu tốt hơn ngay từ khâu crawl**: chuyển bảng đó thành danh sách rõ ràng kiểu "Thẻ tín dụng/ghi nợ — 7-14 ngày làm việc" mỗi dòng, thay vì 3 dòng rời rạc (tên phương thức / đích đến / thời gian) như HTML gốc bị làm phẳng — khi đó dù dùng chunk_size nào, mỗi dòng vẫn là một đơn vị thông tin tự-đầy-đủ. Ngoài ra, đoạn hướng dẫn thao tác ngắn (Q3) cho thấy giới hạn của bản thân embedder local (MiniLM) với câu lệnh ngắn — nếu làm lại nên thử OpenAI/Gemini embedding để đối chiếu.
 
 ---
 

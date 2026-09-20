@@ -33,7 +33,10 @@ from src.store import EmbeddingStore
 CORPUS_DIR = Path("data/shopee-return-refund")
 
 # Mỗi thành viên chỉ đổi DÒNG NÀY sang chiến lược của mình để so sánh công bằng.
-CHUNKER = HeadingChunker(chunk_size=500)
+# chunk_size=1000 (thay vì 500 mặc định): đo thực nghiệm cho 6/10 thay vì 5/10 —
+# mục "Phương thức thanh toán..." (~900 ký tự) giờ lọt gọn 1 chunk thay vì bị
+# RecursiveChunker chẻ vụn thành nhiều mảnh cùng điểm số (xem REPORT_NHOM.md mục 2).
+CHUNKER = HeadingChunker(chunk_size=1000)
 # CHUNKER = FixedSizeChunker(chunk_size=500, overlap=50)  # Phạm Xuân Quý
 # CHUNKER = RecursiveChunker(chunk_size=500)               # Nguyễn Minh Thịnh
 # CHUNKER = SentenceChunker(max_sentences_per_chunk=3)      # Nguyễn Hoàng Tuyên
