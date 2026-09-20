@@ -2,7 +2,7 @@
 
 **Họ tên:** Vũ Minh Điềm
 **MSSV:** 2A202602858
-**Nhóm:** DeltaX
+**Nhóm:** Shopee Return & Refund
 **Vai trò trong nhóm:** Strategy Lead — chiến lược chunking theo heading/mục
 **Ngày:** 2026-09-20
 
@@ -175,7 +175,10 @@ tests/test_solution.py::TestEmbeddingStoreDeleteDocument::test_delete_returns_tr
 **A/B bắt buộc (câu 5, có/không `metadata_filter={"audience":"seller"}`):** không lọc, top-3 đổi hoàn toàn thành 3 chunk của tài liệu buyer (`buyer-return-conditions`, `buyer-return-request-guide`) — chứng minh rõ ràng filter theo `audience` là bắt buộc để không lẫn giữa hai đối tượng, đúng ràng buộc #2 của K4_VARIANT.md.
 
 **Điều hay nhất tôi học được từ thành viên khác / nhóm khác (qua demo):**
-> *(điền sau buổi demo của nhóm DeltaX — so sánh HeadingChunker của tôi với FixedSize (Quý), Recursive (Thịnh), Sentence (Tuyên) trên cùng 5 câu hỏi)*
+> Khi đặt HeadingChunker của tôi cạnh FixedSize (Quý, 5/10), Recursive (Thịnh, 4/10) và Sentence (Tuyên, 3/10) trên cùng 5 câu hỏi, tôi rút ra ba điều:
+> - **Cấu hình chạy phải thống nhất mới so sánh được.** Quý phát hiện tôi thiếu `metadata_filter=audience:buyer` cho Q1–Q4; sau khi bổ sung, Q2 từ "đúng nhưng lạc xuống top-3" thành đúng top-1 và điểm tăng từ 6 lên 7/10. Một phần chênh lệch giữa các chiến lược có thể đến từ cấu hình chạy chứ không chỉ từ thuật toán chunking.
+> - **Overlap của Quý là điểm mạnh tôi chưa tận dụng.** FixedSize 1000/500 giữ được bảng thời gian hoàn tiền ở biên chunk. HeadingChunker của tôi không có overlap nên những ý nằm ở hai section liền kề (như Q3, hai cách gửi yêu cầu) vẫn bị tách rời; kết hợp heading với overlap hoặc reranking là hướng cần thử.
+> - **Ít chunk hoặc giữ nguyên câu chưa chắc tốt hơn.** Recursive của Thịnh dùng ít chunk nhất (32) và Sentence của Tuyên giữ trọn câu, nhưng cả hai đều thấp hơn Heading. Yếu tố quyết định là ranh giới chunk có trùng với đơn vị ý nghĩa của tài liệu hay không.
 
 ---
 
